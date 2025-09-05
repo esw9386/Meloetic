@@ -4,14 +4,15 @@ import javax.sound.midi.*;
 import javax.swing.*;
 
 public class poem {
-    static JTextField tf;
+    static JTextArea ta;
     static Synthesizer synth;
     static MidiChannel channel;
     static PoemListener pl = new PoemListener();
     static int key = 3, scale = 0, instr = 0;
     public static void main(String[] args) {
         final String[] SCALES = {"Major", "Natural Minor", "Harmonic Minor"};
-        final String[] INSTRS = {"Piano", "Violin", "Flute"};
+        final String[] INSTRS = {"Piano", "Guitar", "Flute"};
+        final int[] PROGS = {0,24,73};
         JFrame jf = new JFrame("Poem");
         jf.setSize(700, 700);
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -27,27 +28,23 @@ public class poem {
         Instrument instrument = synth.getDefaultSoundbank().getInstruments()[0];
         // boolean loaded = synth.loadInstrument(instrument);
 
-        tf = new JTextField();
-        tf.addActionListener(pl);
-        main.add(tf, BorderLayout.CENTER);
+        ta = new JTextArea();
+        main.add(ta, BorderLayout.CENTER);
 
         JPanel ctrl = new JPanel(new GridLayout(2,7));
         for (int i=0; i<7; i++) {
             IButton btn = new IButton(i, ""+(char)('A'+(6+i)%7));
             btn.addActionListener((e)-> {key=btn.i;});
-            btn.setBorderPainted(false);
             ctrl.add(btn);
         }
         for (int i=0; i<3; i++) {
             IButton btn = new IButton(i, SCALES[i]); 
             btn.addActionListener((e)-> {scale=btn.i;});
-            btn.setBorderPainted(false);
             ctrl.add(btn);
         }
         for (int i=0; i<3; i++) {
-            IButton btn = new IButton(i, INSTRS[i]); 
-            btn.addActionListener((e)-> {instr=btn.i;});
-            btn.setBorderPainted(false);
+            IButton btn = new IButton(PROGS[i], INSTRS[i]); 
+            btn.addActionListener((e)-> {channel.programChange(btn.i);});
             ctrl.add(btn);
         }
         JButton play = new JButton("PLAY");
@@ -65,7 +62,7 @@ public class poem {
 
     static class IButton extends JButton {
         int i;
-        IButton(int i, String text) {super(text); this.i = i;}
+        IButton(int i, String text) {super(text); this.i = i; setBorderPainted(false);}
     }
 
     static class PoemListener implements ActionListener {
@@ -78,8 +75,8 @@ public class poem {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (tf.getText().isBlank()) {return;}
-            String[] words = tf.getText().split("\s+");
+            if (ta.getText().isBlank()) {return;}
+            String[] words = ta.getText().split("\s+");
             for (String word : words) {
                 channel.noteOn(RTS[key] + value(word.length()), 100);
                 try {Thread.sleep(300);}
@@ -92,7 +89,6 @@ public class poem {
 // Features to add:
 // Multiple keys GABCDEF
 // Tempo adjustment
-// Multiple instruments/voices
 // Enter button for multiline poems
 // Read whitespace as rests (silences)
 // Highlight words while respective notes are played?
