@@ -4,8 +4,9 @@ import javax.sound.midi.*;
 import javax.swing.*;
 
 public class poem {
-    static JTextField tf;
+    static JTextArea ta;
     static Synthesizer synth;
+    static Sequencer seqr;
     static MidiChannel channel;
     static PoemListener pl = new PoemListener();
     static int key = 3, scale = 0, instr = 0;
@@ -21,15 +22,19 @@ public class poem {
         prompt.setAlignmentX(Component.CENTER_ALIGNMENT);
         main.add(prompt, BorderLayout.NORTH);
         
-        try {synth = MidiSystem.getSynthesizer(); synth.open();}
+        try {
+            synth = MidiSystem.getSynthesizer(); 
+            seqr = MidiSystem.getSequencer();
+            synth.open(); seqr.open();
+        }
         catch (MidiUnavailableException mue) {System.out.println(mue);}
         channel = synth.getChannels()[0];
         Instrument instrument = synth.getDefaultSoundbank().getInstruments()[0];
         // boolean loaded = synth.loadInstrument(instrument);
 
-        tf = new JTextField();
-        tf.addActionListener(pl);
-        main.add(tf, BorderLayout.CENTER);
+        ta = new JTextArea();
+        // tf.addActionListener(pl);
+        main.add(ta, BorderLayout.CENTER);
 
         JPanel ctrl = new JPanel(new GridLayout(2,7));
         for (int i=0; i<7; i++) {
@@ -75,25 +80,39 @@ public class poem {
         static final int[] HRM = {0, 2, 3, 5, 7, 8, 11};
         static final int[][] STEPS = {MAJ, MIN, HRM};
         static final int value(int deg) {return (deg<8) ? STEPS[scale][deg-1] : 12 + value(deg-7);}
+        static String[] tokens = {};
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (tf.getText().isBlank()) {return;}
-            String[] words = tf.getText().split("\s+");
-            for (String word : words) {
-                channel.noteOn(RTS[key] + value(word.length()), 50);
-                try {Thread.sleep(300);}
-                catch (InterruptedException ie) {System.out.println(ie);}
+            if (ta.getText().isBlank()) {return;}
+            String[] area = ta.getText().split("\s+");
+            if (!tokens.equals(area)) {
+                tokens = area;
+                try {
+                    Sequence seq = new Sequence(Sequence.PPQ, 24);
+                    Track tr = seq.createTrack();
+                    for (String token : tokens) {
+                        // System.out.println(token);
+                        int pitch = RTS[key] + value(token.length());
+                        ShortMessage on = new ShortMessage(ShortMessage.NOTE_ON, 0, pitch, 50);
+                        // channel.noteOn(RTS[key] + value(token.length()), 50);
+                        tr.add(new MidiEvent(on, tr.ticks()));
+                        // try {Thread.sleep(300);}
+                        // catch (InterruptedException ie) {System.out.println(ie);}
+                    }
+                    seqr.setSequence(seq);
+                }
+                catch (InvalidMidiDataException imde) {System.out.println(imde);}
             }
+            seqr.start();
         }
     }
 }
 
 // Features to add:
-// Multiple keys GABCDEF
+// Fix multiline parsing bug
 // Tempo adjustment
 // Multiple instruments/voices
-// Enter button for multiline poems
 // Read whitespace as rests (silences)
 // Highlight words while respective notes are played?
 // Assign percussion to punctuation?
