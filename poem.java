@@ -81,7 +81,7 @@ public class poem {
             if (tf.getText().isBlank()) {return;}
             String[] words = tf.getText().split("\s+");
             for (String word : words) {
-                channel.noteOn(RTS[key] + value(word.length()), 50);
+                channel.noteOn(RTS[key] + value(word.length()), 100);
                 try {Thread.sleep(300);}
                 catch (InterruptedException ie) {System.out.println(ie);}
             }
