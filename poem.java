@@ -15,8 +15,8 @@ public class poem {
         final String[] INSTRS = {"Piano", "Guitar", "Flute"};
         final int[] PROGS = {0,24,73};
         final String[] KEYS = {"C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"};
-        JFrame jf = new JFrame("Poem");
-        jf.setSize(700, 700);
+        JFrame jf = new JFrame("Meloetic");
+        jf.setSize(700, 700); jf.setMinimumSize(new Dimension(500,200));
         jf.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JPanel main = new JPanel(new BorderLayout());
         
@@ -37,16 +37,17 @@ public class poem {
         ctrl.setLayout(new BoxLayout(ctrl, BoxLayout.Y_AXIS));
 
         JPanel pitch = new JPanel();
-        JSlider tonality = new JSlider(0,11,0);
+        JLabel rootLbl = new JLabel("Root:");
+        JSlider root = new JSlider(0,11,0);
         Dictionary<Integer, JLabel> labels = new Hashtable<>();
         for (int i=0; i<12; i++) {labels.put(i, new JLabel(KEYS[i]));}
-        tonality.setLabelTable(labels);
-        tonality.setPaintLabels(true);
-        tonality.setMajorTickSpacing(1);
-        tonality.setPaintTicks(true);
-        tonality.setSnapToTicks(true);
-        tonality.addChangeListener((e)->key=tonality.getValue());
-        pitch.add(tonality);
+        root.setLabelTable(labels);
+        root.setPaintLabels(true);
+        root.setMajorTickSpacing(1);
+        root.setPaintTicks(true);
+        root.setSnapToTicks(true);
+        root.addChangeListener((e)->key=root.getValue());
+        pitch.add(rootLbl); pitch.add(root);
 
         JLabel octave = new JLabel("Octave: " + oct);
         JPanel btnsOct = new JPanel();
@@ -55,10 +56,8 @@ public class poem {
         JButton octDown = new JButton("\u2193");
         octUp.addActionListener((e)->{if(oct<9){oct++;}});
         octDown.addActionListener((e)->{if(oct>0){oct--;}});
-        btnsOct.add(octUp);
-        btnsOct.add(octDown);
-        pitch.add(octave);
-        pitch.add(btnsOct);
+        btnsOct.add(octUp); btnsOct.add(octDown);
+        pitch.add(octave); pitch.add(btnsOct);
         ctrl.add(pitch);
 
         JPanel btns = new JPanel(new GridLayout(1,7));
@@ -73,8 +72,7 @@ public class poem {
             btns.add(btn);
         }
         JButton play = new JButton("PLAY");
-        play.setBackground(Color.BLUE);
-        play.setForeground(Color.WHITE);
+        play.setBackground(Color.BLUE); play.setForeground(Color.WHITE);
         play.setBorderPainted(false);
         play.setOpaque(true);
         play.addActionListener(pl);
@@ -83,8 +81,7 @@ public class poem {
     
         main.add(ctrl, BorderLayout.SOUTH);
 
-        jf.add(main);
-        jf.setVisible(true);
+        jf.add(main); jf.setVisible(true);
     }
 
     static class IButton extends JButton {
