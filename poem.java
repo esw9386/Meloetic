@@ -106,7 +106,7 @@ public class poem {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (ta.getText().isBlank()) {return;}
-            String[] area = ta.getText().split("\s+");
+            String[] area = ta.getText().split("\\s+");
             if (!tokens.equals(area)) {
                 tokens = area;
                 try {
