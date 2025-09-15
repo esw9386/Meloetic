@@ -8,8 +8,11 @@ public class poem {
     static JTextArea ta;
     static Synthesizer synth;
     static Sequencer seqr;
+    static Sequence seq;
+    static Track tr;
     static MidiChannel channel;
     static PoemListener pl = new PoemListener();
+    static IButton play = new IButton(0, "PLAY");
     static int key = 0, oct = 5, scale = 0;
     public static void main(String[] args) {
         final String[] SCALES = {"Maj", "Nat Min", "Hrm Min"};
@@ -29,11 +32,12 @@ public class poem {
             synth = MidiSystem.getSynthesizer(); 
             seqr = MidiSystem.getSequencer();
             synth.open(); seqr.open();
+            seq = new Sequence(Sequence.PPQ, 24);
+            seqr.addMetaEventListener(m->{if(m.getType()==0x2F){play.setBackground(Color.BLUE);}});
+            tr = seq.createTrack();
         }
-        catch (MidiUnavailableException mue) {System.out.println(mue);}
+        catch (MidiUnavailableException | InvalidMidiDataException me) {System.out.println(me);}
         channel = synth.getChannels()[0];
-        // Instrument instrument = synth.getDefaultSoundbank().getInstruments()[0];
-        // boolean loaded = synth.loadInstrument(instrument);
 
         ta = new JTextArea();
         main.add(ta, BorderLayout.CENTER);
@@ -51,7 +55,7 @@ public class poem {
         root.setMajorTickSpacing(1);
         root.setPaintTicks(true);
         root.setSnapToTicks(true);
-        root.addChangeListener((e)->key=root.getValue());
+        root.addChangeListener(e->key=root.getValue());
         pitch.add(rootLbl); pitch.add(root);
 
         final String OCT = "Octave: ";
@@ -60,8 +64,8 @@ public class poem {
         btnsOct.setLayout(new BoxLayout(btnsOct, BoxLayout.Y_AXIS));
         JButton octUp = new JButton("\u2191");
         JButton octDown = new JButton("\u2193");
-        octUp.addActionListener((e)->{if(oct<9){oct++;octave.setText(OCT+String.valueOf(oct));}});
-        octDown.addActionListener((e)->{if(oct>0){oct--;octave.setText(OCT+String.valueOf(oct));}});
+        octUp.addActionListener(e->{if(oct<9){oct++;octave.setText(OCT+String.valueOf(oct));}});
+        octDown.addActionListener(e->{if(oct>0){oct--;octave.setText(OCT+String.valueOf(oct));}});
         btnsOct.add(octUp); btnsOct.add(octDown);
         pitch.add(octave); pitch.add(btnsOct);
         ctrl.add(pitch);
@@ -77,10 +81,7 @@ public class poem {
             btn.addActionListener((e)->{channel.programChange(btn.i);});
             btns.add(btn);
         }
-        JButton play = new JButton("PLAY");
         play.setBackground(Color.BLUE); play.setForeground(Color.WHITE);
-        play.setBorderPainted(false);
-        play.setOpaque(true);
         play.addActionListener(pl);
         btns.add(play);
         ctrl.add(btns);
@@ -101,31 +102,31 @@ public class poem {
         static final int[] HRM = {0, 2, 3, 5, 7, 8, 11};
         static final int[][] STEPS = {MAJ, MIN, HRM};
         static final int value(int deg) {return (deg<8) ? STEPS[scale][deg-1] : 12 + value(deg-7);}
-        static String[] tokens = {};
+        static String[] words = {};
+        static int[] degs = {}; // to compare isomorphic (or something) poems
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (ta.getText().isBlank()) {return;}
-            String[] area = ta.getText().split("\\s+");
-            if (!tokens.equals(area)) {
-                tokens = area;
+            seqr.stop();
+            String poem = ta.getText();
+            if (poem.isBlank()) {return;}
+            String[] tokens = poem.split("\\s+"); // \s being any whitespace char
+            if (!words.equals(tokens)) {
+                words = tokens;
+                while (tr.size()>0) {tr.remove(tr.get(tr.size()-1));}
                 try {
-                    Sequence seq = new Sequence(Sequence.PPQ, 24);
-                    Track tr = seq.createTrack();
-                    for (String token : tokens) {
-                        // System.out.println(token);
-                        int pitch = RTS[key] + value(token.length());
-                        ShortMessage on = new ShortMessage(ShortMessage.NOTE_ON, 0, pitch, 50);
-                        // channel.noteOn(RTS[key] + value(token.length()), 50);
-                        tr.add(new MidiEvent(on, tr.ticks()));
-                        // try {Thread.sleep(300);}
-                        // catch (InterruptedException ie) {System.out.println(ie);}
+                    for (String word:words) {
+                        int pitch = 12*oct + key + value(word.length());
+                        ShortMessage on = new ShortMessage(ShortMessage.NOTE_ON, 0, pitch, 100);
+                        ShortMessage off = new ShortMessage(ShortMessage.NOTE_OFF, 0, pitch, 0);
+                        tr.add(new MidiEvent(on, tr.ticks())); // add new note to end of track
+                        tr.add(new MidiEvent(off, tr.ticks()+24)); // add new note to end of track
                     }
                     seqr.setSequence(seq);
-                }
-                catch (InvalidMidiDataException imde) {System.out.println(imde);}
+                } catch (InvalidMidiDataException imde) {System.out.println(imde);}
             }
-            seqr.start();
+            play.setBackground(Color.GRAY);
+            seqr.setTickPosition(0); seqr.start();
         }
     }
 }
