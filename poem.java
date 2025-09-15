@@ -49,13 +49,14 @@ public class poem {
         root.addChangeListener((e)->key=root.getValue());
         pitch.add(rootLbl); pitch.add(root);
 
-        JLabel octave = new JLabel("Octave: " + oct);
+        final String OCT = "Octave: ";
+        JLabel octave = new JLabel(OCT + oct);
         JPanel btnsOct = new JPanel();
         btnsOct.setLayout(new BoxLayout(btnsOct, BoxLayout.Y_AXIS));
         JButton octUp = new JButton("\u2191");
         JButton octDown = new JButton("\u2193");
-        octUp.addActionListener((e)->{if(oct<9){oct++;}});
-        octDown.addActionListener((e)->{if(oct>0){oct--;}});
+        octUp.addActionListener((e)->{if(oct<9){oct++;octave.setText(OCT+String.valueOf(oct));}});
+        octDown.addActionListener((e)->{if(oct>0){oct--;octave.setText(OCT+String.valueOf(oct));}});
         btnsOct.add(octUp); btnsOct.add(octDown);
         pitch.add(octave); pitch.add(btnsOct);
         ctrl.add(pitch);
@@ -99,7 +100,7 @@ public class poem {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (ta.getText().isBlank()) {return;}
-            String[] words = ta.getText().split("\s+");
+            String[] words = ta.getText().split("\\s+");
             for (String word : words) {
                 channel.noteOn(12*oct + key + value(word.length()), 100);
                 try {Thread.sleep(300);}
@@ -110,9 +111,8 @@ public class poem {
 }
 
 // Features to add:
-// Live octave label
+// Sequencer
 // Tempo adjustment
-// Correct newline parsing
 // Read whitespace as rests (silences)
 // Highlight words while respective notes are played?
 // Assign percussion to punctuation?
