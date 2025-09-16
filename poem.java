@@ -13,7 +13,9 @@ public class poem {
     static MidiChannel channel;
     static PoemListener pl = new PoemListener();
     static IButton play = new IButton(0, "PLAY");
+    static Color DARK_BLUE = new Color(0x0000A0);
     static int key = 0, oct = 5, scale = 0;
+    static float tempo = 120;
     public static void main(String[] args) {
         final String[] SCALES = {"Maj", "Nat Min", "Hrm Min"};
         final String[] INSTRS = {"Piano", "Guitar", "Flute"};
@@ -45,8 +47,7 @@ public class poem {
         JPanel ctrl = new JPanel();
         ctrl.setLayout(new BoxLayout(ctrl, BoxLayout.Y_AXIS));
 
-        JPanel pitch = new JPanel();
-        JLabel rootLbl = new JLabel("Root:");
+        JPanel row1 = new JPanel();
         JSlider root = new JSlider(0,11,0);
         Dictionary<Integer, JLabel> labels = new Hashtable<>();
         for (int i=0; i<12; i++) {labels.put(i, new JLabel(KEYS[i]));}
@@ -55,8 +56,8 @@ public class poem {
         root.setMajorTickSpacing(1);
         root.setPaintTicks(true);
         root.setSnapToTicks(true);
-        root.addChangeListener(e->key=root.getValue());
-        pitch.add(rootLbl); pitch.add(root);
+        root.addChangeListener(_->key=root.getValue());
+        row1.add(new JLabel("Root:")); row1.add(root);
 
         final String OCT = "Octave: ";
         JLabel octave = new JLabel(OCT + oct);
@@ -64,27 +65,35 @@ public class poem {
         btnsOct.setLayout(new BoxLayout(btnsOct, BoxLayout.Y_AXIS));
         JButton octUp = new JButton("\u2191");
         JButton octDown = new JButton("\u2193");
-        octUp.addActionListener(e->{if(oct<9){oct++;octave.setText(OCT+String.valueOf(oct));}});
-        octDown.addActionListener(e->{if(oct>0){oct--;octave.setText(OCT+String.valueOf(oct));}});
+        octUp.addActionListener(_->{if(oct<9){oct++;octave.setText(OCT+String.valueOf(oct));}});
+        octDown.addActionListener(_->{if(oct>0){oct--;octave.setText(OCT+String.valueOf(oct));}});
         btnsOct.add(octUp); btnsOct.add(octDown);
-        pitch.add(octave); pitch.add(btnsOct);
-        ctrl.add(pitch);
+        row1.add(octave); row1.add(btnsOct);
+        
+        JTextField tmp = new JTextField("120.0");
+        tmp.setColumns(4); tmp.setHorizontalAlignment(JTextField.CENTER);
+        tmp.addActionListener(_->{
+            try {
+                float temp = Float.parseFloat(tmp.getText());
+                if (5<temp && temp<300) {tempo=temp;}
+                else {System.err.println("Tempos between 5.0 and 300.0 BPM accepted");}
+            } catch (NumberFormatException nfe) {System.err.println("Non-numerical tempo");}
+            tmp.setText(String.valueOf(tempo));
+        });
+        row1.add(new JLabel("Tempo:")); row1.add(tmp);
+        ctrl.add(row1);
 
-        JPanel btns = new JPanel(new GridLayout(1,7));
-        for (int i=0; i<3; i++) {
-            IButton btn = new IButton(i, SCALES[i]); 
-            btn.addActionListener((e)->{scale=btn.i;});
-            btns.add(btn);
-        }
-        for (int i=0; i<3; i++) {
-            IButton btn = new IButton(PROGS[i], INSTRS[i]); 
-            btn.addActionListener((e)->{channel.programChange(btn.i);});
-            btns.add(btn);
+        JPanel row2 = new JPanel(new GridLayout(1,7));
+        for (int i=0; i<6; i++) { // this loop >>
+            IButton btn = i<3 ? new IButton(i, SCALES[i]) : new IButton(PROGS[i-3], INSTRS[i-3]); 
+            btn.addActionListener(i<3 ? _->{scale=btn.i;} : _->{channel.programChange(btn.i);});
+            row2.add(btn);
         }
         play.setBackground(Color.BLUE); play.setForeground(Color.WHITE);
         play.addActionListener(pl);
-        btns.add(play);
-        ctrl.add(btns);
+        play.setOpaque(true);
+        row2.add(play);
+        ctrl.add(row2);
     
         main.add(ctrl, BorderLayout.SOUTH);
 
@@ -107,7 +116,7 @@ public class poem {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            seqr.stop();
+            seqr.stop(); seqr.setTickPosition(0); seqr.setTempoInBPM(tempo);
             String poem = ta.getText();
             if (poem.isBlank()) {return;}
             String[] tokens = poem.split("\\s+"); // \s being any whitespace char
@@ -119,21 +128,20 @@ public class poem {
                         int pitch = 12*oct + key + value(word.length());
                         ShortMessage on = new ShortMessage(ShortMessage.NOTE_ON, 0, pitch, 100);
                         ShortMessage off = new ShortMessage(ShortMessage.NOTE_OFF, 0, pitch, 0);
-                        tr.add(new MidiEvent(on, tr.ticks())); // add new note to end of track
-                        tr.add(new MidiEvent(off, tr.ticks()+24)); // add new note to end of track
+                        tr.add(new MidiEvent(on, tr.ticks()));
+                        tr.add(new MidiEvent(off, tr.ticks()+24)); // 24 ticks/beat
                     }
                     seqr.setSequence(seq);
                 } catch (InvalidMidiDataException imde) {System.out.println(imde);}
             }
-            play.setBackground(Color.GRAY);
-            seqr.setTickPosition(0); seqr.start();
+            play.setBackground(DARK_BLUE);
+            seqr.start();
         }
     }
 }
 
 // Features to add:
-// Sequencer
-// Tempo adjustment
+// Restore instrument selection
 // Read whitespace as rests (silences)
 // Highlight words while respective notes are played?
 // Assign percussion to punctuation?
